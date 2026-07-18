@@ -16,6 +16,7 @@ import { AdminView } from '@/components/AdminView';
 export default function Home() {
   const { user, loading, activeTab, setActiveTab, toggleTheme, theme, logoutUser } = useApp();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   if (loading) {
     return (
@@ -221,8 +222,25 @@ export default function Home() {
         {/* Top Navigation */}
         <header className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800 transition-colors duration-200">
           <div className="flex items-center gap-4">
-            {/* Mobile hamburger mockup (defaults back to dashboard click) */}
-            <span className="md:hidden text-2xl font-black text-indigo-500 dark:text-indigo-400 mr-2">SkillSwap AI</span>
+            {/* Mobile Hamburger menu toggle */}
+            <div className="md:hidden flex items-center gap-2">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 -ml-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/40 text-slate-655 dark:text-slate-300 focus:outline-none transition-colors"
+                title="Toggle Navigation Menu"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {isMobileMenuOpen ? (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M6 18L18 6M6 6l12 12" />
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M4 6h16M4 12h16M4 18h16" />
+                  )}
+                </svg>
+              </button>
+              <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-500 to-indigo-650 dark:from-indigo-400 dark:to-indigo-500 bg-clip-text text-transparent">
+                SkillSwap AI
+              </span>
+            </div>
             <div className="hidden md:block">
               <h2 className="text-xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
                 {menuItems.find((m) => m.id === activeTab)?.label}
@@ -333,6 +351,76 @@ export default function Home() {
           {renderActiveView()}
         </main>
       </div>
+
+      {/* Mobile Drawer Navigation Overlay */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          {/* Backdrop overlay */}
+          <div 
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" 
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          
+          {/* Drawer Content */}
+          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white dark:bg-[#0c0d1b] border-r border-slate-200 dark:border-slate-800 p-6 shadow-2xl transition-all duration-300 ease-in-out transform">
+            <div className="flex items-center justify-between mb-6">
+              <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-indigo-500 to-indigo-650 dark:from-indigo-400 dark:to-indigo-500 bg-clip-text text-transparent">
+                SkillSwap AI
+              </span>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 focus:outline-none"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <nav className="flex-1 flex flex-col gap-1 overflow-y-auto">
+              {menuItems.map((item) => {
+                if (item.adminOnly && user.role !== 'admin') return null;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTab(item.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-indigo-600/10 border-l-4 border-indigo-550 text-indigo-650 dark:text-indigo-400 shadow-sm'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/30'
+                    }`}
+                  >
+                    <span className={`transition-transform duration-200 ${isActive ? 'text-indigo-550 dark:text-indigo-400' : 'text-slate-400'}`}>
+                      {renderMenuIcon(item.id)}
+                    </span>
+                    {item.label}
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Standalone Logout footer in mobile drawer */}
+            <div className="pt-4 border-t border-slate-200 dark:border-slate-800 mt-auto">
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  logoutUser();
+                }}
+                className="w-full flex items-center gap-3.5 px-4 py-3 rounded-lg text-xs font-bold text-red-550 dark:text-red-400 hover:bg-red-500/5 dark:hover:bg-red-500/10 transition-all cursor-pointer focus:outline-none"
+              >
+                <svg className="w-4.5 h-4.5 text-red-550" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
