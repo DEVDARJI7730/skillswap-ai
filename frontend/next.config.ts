@@ -1,3 +1,4 @@
+// Production Vercel deployment configurations
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
