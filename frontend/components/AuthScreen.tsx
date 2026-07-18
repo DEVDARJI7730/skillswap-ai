@@ -72,7 +72,8 @@ export const AuthScreen: React.FC = () => {
           { 
             theme: 'outline', 
             size: 'large', 
-            shape: 'pill',
+            shape: 'rectangular',
+            text: 'continue_with',
             width: 384
           }
         );
@@ -356,7 +357,7 @@ export const AuthScreen: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  className="w-full py-2.5 px-6 text-sm font-semibold border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-full flex items-center justify-center gap-3 cursor-pointer transition-all active:scale-[0.98] shadow-sm focus:outline-none"
+                  className="w-full py-2.5 px-6 text-sm font-semibold border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-lg flex items-center justify-center gap-3 cursor-pointer transition-all active:scale-[0.98] shadow-sm focus:outline-none"
                   disabled={loading}
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -377,7 +378,7 @@ export const AuthScreen: React.FC = () => {
                       d="M12 24c3.245 0 5.973-1.073 7.964-2.927l-3.782-2.927a7.1 7.1 0 0 1-4.182 1.182c-3.718 0-6.855-2.509-7.973-5.882L.19 16.89A11.905 11.905 0 0 0 12 24z"
                     />
                   </svg>
-                  Sign in with Google
+                  Continue with Google
                 </button>
               )}
             </div>
