@@ -73,7 +73,7 @@ export const AuthScreen: React.FC = () => {
             theme: 'outline', 
             size: 'large', 
             shape: 'rectangular',
-            text: 'continue_with',
+            text: 'signin_with',
             width: 384
           }
         );
@@ -378,7 +378,7 @@ export const AuthScreen: React.FC = () => {
                       d="M12 24c3.245 0 5.973-1.073 7.964-2.927l-3.782-2.927a7.1 7.1 0 0 1-4.182 1.182c-3.718 0-6.855-2.509-7.973-5.882L.19 16.89A11.905 11.905 0 0 0 12 24z"
                     />
                   </svg>
-                  Continue with Google
+                  Sign in with Google
                 </button>
               )}
             </div>
