@@ -188,51 +188,109 @@ from email.mime.multipart import MIMEMultipart
 
 def send_otp_email(to_email: str, otp: str):
     from app.config import settings
-    smtp_host = settings.SMTP_HOST
-    smtp_port = settings.SMTP_PORT
-    smtp_user = settings.SMTP_USER
-    smtp_password = settings.SMTP_PASSWORD
+    import httpx
+    
+    subject = "SkillSwap AI - Password Reset OTP Code"
+    body_html = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; background-color: #fafafa; padding: 20px; color: #333;">
+        <div style="max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; border: 1px solid #e4e4e7; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+          <h2 style="color: #4f46e5; margin-bottom: 20px; font-weight: 800;">SkillSwap AI Security</h2>
+          <p style="font-size: 14px; line-height: 1.6; color: #555;">
+            We received a request to reset your password. Use the following 6-digit One-Time Password (OTP) to complete the verification:
+          </p>
+          <div style="background-color: #f3f4f6; border-radius: 8px; padding: 15px; margin: 25px 0; text-align: center;">
+            <span style="font-size: 28px; font-weight: 800; tracking: 4px; color: #4f46e5; letter-spacing: 5px;">{otp}</span>
+          </div>
+          <p style="font-size: 11px; color: #888; line-height: 1.5; margin-top: 25px;">
+            This OTP is valid for 10 minutes. If you did not request this code, you can safely ignore this email.
+          </p>
+        </div>
+      </body>
+    </html>
+    """
 
-    if not smtp_user or not smtp_password:
-        print(f"[SMTP Warning]: Credentials missing. OTP printed to terminal: {otp}")
-        return False
+    # 1. Try Resend REST API
+    if settings.RESEND_API_KEY:
+        try:
+            print(f"[Mailer]: Sending via Resend API to {to_email}...")
+            # Default to Resend free domain sender unless verified custom domain
+            sender_email = "onboarding@resend.dev"
+            if settings.BREVO_SENDER_EMAIL and "@" in settings.BREVO_SENDER_EMAIL and "gmail.com" not in settings.BREVO_SENDER_EMAIL:
+                sender_email = settings.BREVO_SENDER_EMAIL
+            
+            headers = {
+                "Authorization": f"Bearer {settings.RESEND_API_KEY}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "from": f"SkillSwap AI <{sender_email}>",
+                "to": [to_email],
+                "subject": subject,
+                "html": body_html
+            }
+            res = httpx.post("https://api.resend.com/emails", headers=headers, json=payload, timeout=10.0)
+            if res.status_code in [200, 201, 202]:
+                print(f"[Email Sent]: OTP successfully delivered via Resend API to {to_email}")
+                return True
+            else:
+                print(f"[Resend API Error]: Status {res.status_code} - Response: {res.text}")
+        except Exception as e:
+            print(f"[Resend API Connection Error]: {e}")
 
-    try:
-        msg = MIMEMultipart()
-        msg['From'] = smtp_user
-        msg['To'] = to_email
-        msg['Subject'] = "SkillSwap AI - Password Reset OTP Code"
+    # 2. Try Brevo REST API
+    if settings.BREVO_API_KEY:
+        try:
+            print(f"[Mailer]: Sending via Brevo API to {to_email}...")
+            headers = {
+                "api-key": settings.BREVO_API_KEY,
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "sender": {
+                    "name": "SkillSwap AI",
+                    "email": settings.BREVO_SENDER_EMAIL or "darjidev2504@gmail.com"
+                },
+                "to": [
+                    {
+                        "email": to_email
+                    }
+                ],
+                "subject": subject,
+                "htmlContent": body_html
+            }
+            res = httpx.post("https://api.brevo.com/v3/smtp/email", headers=headers, json=payload, timeout=10.0)
+            if res.status_code in [200, 201, 202]:
+                print(f"[Email Sent]: OTP successfully delivered via Brevo API to {to_email}")
+                return True
+            else:
+                print(f"[Brevo API Error]: Status {res.status_code} - Response: {res.text}")
+        except Exception as e:
+            print(f"[Brevo API Connection Error]: {e}")
 
-        body = f"""
-        <html>
-          <body style="font-family: Arial, sans-serif; background-color: #fafafa; padding: 20px; color: #333;">
-            <div style="max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; border: 1px solid #e4e4e7; box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
-              <h2 style="color: #4f46e5; margin-bottom: 20px; font-weight: 800;">SkillSwap AI Security</h2>
-              <p style="font-size: 14px; line-height: 1.6; color: #555;">
-                We received a request to reset your password. Use the following 6-digit One-Time Password (OTP) to complete the verification:
-              </p>
-              <div style="background-color: #f3f4f6; border-radius: 8px; padding: 15px; margin: 25px 0; text-align: center;">
-                <span style="font-size: 28px; font-weight: 800; tracking: 4px; color: #4f46e5; letter-spacing: 5px;">{otp}</span>
-              </div>
-              <p style="font-size: 11px; color: #888; line-height: 1.5; margin-top: 25px;">
-                This OTP is valid for 10 minutes. If you did not request this code, you can safely ignore this email.
-              </p>
-            </div>
-          </body>
-        </html>
-        """
-        msg.attach(MIMEText(body, 'html'))
+    # 3. Fallback to standard SMTP
+    if settings.SMTP_USER and settings.SMTP_PASSWORD:
+        try:
+            print(f"[Mailer]: Falling back to SMTP connection for {to_email}...")
+            msg = MIMEMultipart()
+            msg['From'] = settings.SMTP_USER
+            msg['To'] = to_email
+            msg['Subject'] = subject
+            msg.attach(MIMEText(body_html, 'html'))
 
-        with smtplib.SMTP(smtp_host, smtp_port) as server:
-            server.starttls()
-            server.login(smtp_user, smtp_password)
-            server.sendmail(smtp_user, to_email, msg.as_string())
-        
-        print(f"[Email Sent]: OTP successfully delivered to {to_email}")
-        return True
-    except Exception as e:
-        print(f"[SMTP Error]: Failed to deliver email to {to_email}: {e}. Fallback OTP: {otp}")
-        return False
+            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+                server.starttls()
+                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                server.sendmail(settings.SMTP_USER, to_email, msg.as_string())
+            
+            print(f"[Email Sent]: OTP successfully delivered via SMTP to {to_email}")
+            return True
+        except Exception as e:
+            print(f"[SMTP Error]: Failed to deliver email to {to_email}: {e}. Fallback OTP: {otp}")
+            return False
+
+    print(f"[Mailer Warning]: No mail API keys or SMTP credentials configured. OTP code printed to terminal: {otp}")
+    return False
 
 @router.post("/forgot-password")
 async def forgot_password(schema: ForgotPasswordSchema, background_tasks: BackgroundTasks):
