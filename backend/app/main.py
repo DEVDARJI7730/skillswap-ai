@@ -35,9 +35,14 @@ app = FastAPI(
 )
 
 # CORS Middleware setup
+origins = [
+    "http://localhost:3000",
+    "https://skillswap-frontend-1gv8.onrender.com",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Set to frontend domain in production
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
